@@ -18,28 +18,46 @@ sheet = client.open_by_key(
     "1muFburMLNn2A3-3aEsh6ecT0bkrkn8e7xHpU1A3zp6U").sheet1
 
 
-# 找標題&網址：回傳一個 dictionary (輸入頁面，輸出 標題&網址 dict)   
-def CatchTitleAndLink(url):
-    r = requests.get(url)
-    soup = bs4.BeautifulSoup(r.text, "html.parser")
-    titles = soup.find_all("div", class_="title")
-
-
-    # 1.找標題 (title_lst 是個 list)
-    title_lst = []
-    for t in titles:
-        title_lst.append(t.text)
-
-
-    # 2.抓網址 (article_href 是個 list)
-    article_href = []
-    for item in titles:
-        item_href = item.select_one("a").get("href")
-        article_href.append(item_href)
-
+# 找標題&網址：回傳一個 dictionary (輸入頁面的網址list，輸出 標題&網址 dict)   
+def CatchTitleAndLink(url_lst):
     correspond_dict = dict()
-    for i in range(len(title_lst)):
-        correspond_dict[title_lst[i]] = 'https://www.ptt.cc' + article_href[i]
+    
+    for url in url_lst:
+        r = requests.get(url)
+        soup = bs4.BeautifulSoup(r.text, "html.parser")
+        titles = soup.find_all("div", class_="title")
+
+
+        # 1.找標題 (title_lst 是個 list)
+        title_lst = []
+        for t in titles:
+            title_lst.append(t.text)
+
+
+        # 2.抓網址 (article_href 是個 list)
+        article_href = []
+        for item in titles:
+            item_href = item.select_one("a").get("href")
+            article_href.append(item_href)
+
+        # 3. 抓日期
+        date = soup.find_all("div", class_="date")
+        date_lst = []
+        for d in date:
+            d_temp = d.text.strip()
+            d_temp2 = datetime.datetime.strptime(d_temp,"%m/%d" )
+            date_lst.append(d_temp2)
+        
+        # 判別日期是否大於等於使用者輸入的日期，變成一個編號位置的 list
+        loc_lst = []
+
+        for j in range(len(date_lst)):
+            if date_lst[j] >= date_user:
+                loc_lst.append(j)     
+        
+        # append 到 dict
+        for i in loc_lst:
+            correspond_dict[title_lst[i]] = 'https://www.ptt.cc' + article_href[i]
     
     return correspond_dict
  
@@ -51,9 +69,9 @@ import datetime
 
 date_temp = sheet.batch_get(['B2']) # 記得要改成使用者輸入的欄位！！！！！！
 
-date_temp2 = datetime.datetime.strptime(date_temp[0][0][0],"%m/%d" )
-diff = datetime.timedelta(days = 1)
-date_input = (date_temp2 - diff).strftime("%m/%d")
+date_user = datetime.datetime.strptime(date_temp[0][0][0],"%m/%d" )
+diff = datetime.timedelta(days = 1) # 這邊要抓使用者輸入的前一天（要確保頁面上該日期都有，之後再篩）
+date_input = (date_user - diff).strftime("%m/%d")
 print(date_input)
 
 # 2.查找
@@ -107,13 +125,13 @@ pages_url_lst = Page(website)
 
 # 現在先輸出小頁面網址當測試，之後要改！
 link_for_test = []
-for url in pages_url_lst:
-    TitleLink = CatchTitleAndLink(url)
-    
-    for i in TitleLink.values():
-        link_for_test.append(i)
-    gsheet(link_for_test)
-    
+
+TitleLink = CatchTitleAndLink(pages_url_lst)
+
+for i in TitleLink.keys():
+    link_for_test.append(i)
+gsheet(link_for_test)
+
 
 print(link_for_test)
  
