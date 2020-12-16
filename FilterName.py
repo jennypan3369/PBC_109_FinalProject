@@ -31,7 +31,21 @@ def Cut(title_lst):
                 except ValueError:
                     tmp_record_index.append(index)
 
-    # 刪除不符要求的標題 index，append 進新的 tmp_title_lst
+        living_room = title.find("廳")
+        if living_room != -1:
+            try:
+                int(title[living_room-1])
+            except ValueError:
+                tmp_record_index.append(index)
+
+        bath_room = title.find("衛")
+        if bath_room != -1:
+            try:
+                int(title[bath_room-1])
+            except ValueError:
+                tmp_record_index.append(index)
+
+    # 刪除不符要求的標題 index，append 進新的 new_title_lst
     new_title_lst = []
     all_index = set(list(range(len(title_lst))))  # 建立{0,1,.,len(title_lst)}
     record_index = set(tmp_record_index)
