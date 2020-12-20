@@ -35,7 +35,7 @@ def Cut(title_lst):
 
 # 篩選符合使用者條件的標題（需輸入 Leona 部分的性別、城市、房數）
 def Filter(title_lst, gender, city, room):  # gender=str(), city=str(), room=str()
-    Num2Chi = {"1":"一", "2":"二", "3":"三", "4":"四", "5":"五", "6":"六", "7":"七"}
+    Num2Chi = {"1":"一", "2":"二", "3":"三", "4":"四", "5":"五", "6":"六", "7":"七","8":"八"}
     
     Num_room = room + "房"
     Chi_room = Num2Chi[room] + "房"
