@@ -1,19 +1,17 @@
+#PTT 租屋版
+# 寫入線下 excel 
+
 
 # 用 beautifulsoup 來處理 html 格式
 import bs4
 import requests
+import xlwings as xw
+
 
 website = "https://www.ptt.cc/bbs/Rent_apart/index.html"
+wb = xw.Book.caller()  # 【重要】所有要跟excel互動的函數都要先加這一行才能讓excel呼叫到
+sht = wb.sheets[0]  # 我設sheet1作為互動的介面，大家只要記得是介面是在 "sht"
 
-
-# googlesheet 串接
-
-scopes = ["https://spreadsheets.google.com/feeds"]
-credentials = ServiceAccountCredentials.from_json_keyfile_name(
-    "credential.json", scopes)
-client = gspread.authorize(credentials)
-sheet = client.open_by_key(
-    "1muFburMLNn2A3-3aEsh6ecT0bkrkn8e7xHpU1A3zp6U").sheet1
 
 
 # 找標題&網址：回傳一個 dictionary (輸入頁面的網址list，輸出 標題&網址 dict)   
@@ -65,12 +63,11 @@ def CatchTitleAndLink(url_lst):
 # 1.依據使用者輸入的日期
 import datetime
 
-date_temp = sheet.batch_get(['B2']) # 記得要改成使用者輸入的欄位！！！！！！
+date_temp =  sht.range('c3').value  # 使用者輸入欄位 #C3
 
 date_user = datetime.datetime.strptime(date_temp[0][0][0],"%m/%d" )
 diff = datetime.timedelta(days = 1) # 這邊要抓使用者輸入的前一天（要確保頁面上該日期都有，之後再篩）
 date_input = (date_user - diff).strftime("%m/%d")
-print(date_input)
 
 # 2.查找
 def CheckDate(date_lst):
@@ -248,12 +245,19 @@ def contentfilter(url_lst, district_input, rent_input, floor_input, equipment_li
             if lst_final[i].find('租屋地址') != -1:
                 if lst_final[i][8:].find('區') != -1:
                     district2 = lst_final[i][8:lst_final[i].find('區')+1]
+                if lst_final[i][8:].find('市') != -1:
+                    district = lst_final[i][8:lst_final[i].find('市')+1]
+                if lst_final[i][8:].find('鄉') != -1:
+                    district = lst_final[i][8:lst_final[i].find('鄉')+1]
+                if lst_final[i][8:].find('鎮') != -1:
+                    district = lst_final[i][8:lst_final[i].find('鎮')+1]
             else:
                 district2 = "沒寫"
                     
             # floor
             if lst_final[i].find('租屋樓層') != -1:
                 floor = lst_final[i][5:lst_final[i].find('/')]
+ 
 
             # rent
             if lst_final[i].find('每月租金') != -1:
@@ -262,7 +266,7 @@ def contentfilter(url_lst, district_input, rent_input, floor_input, equipment_li
                     if lst_final[i][j] not in num_list:
                         lst_final[i] = lst_final[i].replace(lst_final[i][j], ' ')
                 rent = int(lst_final[i][5:].replace(' ',''))
-            
+
             # equipment
             if lst_final[i].find('提供設備') != -1:
                 equipment = lst_final[i][5:]
@@ -311,9 +315,9 @@ for i in TitleLink.keys():
 
 # step3：標題篩選
 # 這邊要改！！
-gender = "女" #C3
-city = "台北" #C4
-room = "2" #C7
+gender = sht.range('c6').value # 使用者輸入 C6
+city = sht.range('c4').value   # 使用者輸入 C4
+room = sht.range('c7').value   # 使用者輸入 C7
 cut_title_lst = Cut(title_lst)
 filter_title_lst = Filter(cut_title_lst, gender, city, room)
 print(filter_title_lst)
@@ -325,20 +329,16 @@ for i in filter_title_lst:
     for j in TitleLink.keys():
         if i == j:
             link_filtered_lst.append(TitleLink[j])
-print(link_filtered_lst)            
+print(link_filtered_lst)  
+
 # step5: 將內文做 filter
-# 這邊要改！！
-district_input = "都可以" #C4 
-rent_input = "10001~30000"
-floor_input= "都可以"
-equipment_list = ["都可以","都可以","冷氣"]
-
-output = contentfilter(link_filtered_lst,district_input,rent_input,floor_input,equipment_list)
+# 使用者輸入區
+district_input = sht.range('c5').value  # 使用者輸入 C5 
+rent_input = sht.range('c9').value  # 使用者輸入 C9 
+floor_input= sht.range('c5').value        # 使用者輸入 C8 
+equipment_list = [sht.range('c10').value ,sht.range('c11').value ,sht.range('c12').value ] #C10/11/12
 
 
-#印出在 googlesheet 上
-gsheet(output)
+output = contentfilter(link_filtered_lst,district_input,rent_input,floor_input,equipment_list) #這是最終輸出囉！
 
-
-print(output)
  
